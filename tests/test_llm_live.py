@@ -21,9 +21,11 @@ pytestmark = pytest.mark.skipif(
     not HAS_KEY, reason="No GEMINI_API_KEY / OPENAI_API_KEY configured"
 )
 
-# A real Stips thread, shortened: on-topic for the study.
+# Synthetic stand-in, paraphrased from the pattern of real Stips threads: on-topic
+# for the study. Not a verbatim post, and the id resolves to nothing on purpose -
+# this repo must never pair a reachable URL with a minor's medical disclosure.
 POSITIVE = Post(
-    url="https://stips.co.il/ask/19440091/x",
+    url="https://stips.co.il/ask/000001/fixture-positive",
     source=Source.STIPS,
     title="איך אני יכול לקבל טיפול נפשי בלי שההורים שלי ידעו למה אני צריך בכלל",
     body="אני בן 15 ואני רוצה ללכת לפסיכולוג אבל אני לא רוצה שההורים שלי ידעו. "
@@ -37,7 +39,7 @@ POSITIVE = Post(
 
 # Mentions a medical term and parents, but is not about privacy or autonomy.
 NEGATIVE = Post(
-    url="https://stips.co.il/ask/000000/y",
+    url="https://stips.co.il/ask/000002/fixture-negative",
     source=Source.STIPS,
     title="מתכון לעוגת גזר של אמא",
     body="אמא שלי הכינה עוגת גזר מעולה בשבת. היא אמרה שהסוכר בה מופחת כי אבא "
@@ -96,7 +98,9 @@ def test_retries_recover_from_a_transient_failure(screener, monkeypatch):
     def flaky(prompt, system, schema):
         calls["n"] += 1
         if calls["n"] == 1:
-            raise RuntimeError("simulated 503 from provider")
+            # Deliberately not "503"/"429": those trip the long backoff tiers and
+            # would add 10s+ to the suite. The subject here is retry-then-succeed.
+            raise RuntimeError("simulated transient provider failure")
         return real(prompt, system, schema)
 
     monkeypatch.setattr(screener, "complete_json", flaky)

@@ -397,11 +397,21 @@ def expand_query(prompt: str, provider: Optional[str] = None, limit: int = 12) -
         log.warning("Query expansion unavailable: %s", exc)
         return []
 
-    try:
-        terms = screener.complete_json(prompt, EXPANSION_PROMPT, EXPANSION_SCHEMA).get("terms") or []
-    except Exception as exc:
-        log.warning("Query expansion failed: %s", exc)
-        return []
+    # Retries for the same reason analyze() does: a single 503 or rate limit
+    # would otherwise silently drop expansion and quietly narrow the whole run.
+    terms: list = []
+    for attempt in range(3):
+        try:
+            terms = screener.complete_json(
+                prompt, EXPANSION_PROMPT, EXPANSION_SCHEMA).get("terms") or []
+            break
+        except Exception as exc:
+            if attempt == 2:
+                log.warning("Query expansion failed: %s", exc)
+                return []
+            wait = _backoff_for(exc, attempt)
+            log.warning("Query expansion retry %s/3 in %ss: %s", attempt + 1, wait, exc)
+            time.sleep(wait)
 
     out, seen = [], set()
     for term in terms:
