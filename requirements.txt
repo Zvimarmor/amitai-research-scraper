@@ -1,0 +1,18 @@
+# Core
+pydantic>=2.7
+python-dotenv>=1.0
+
+# Networking / scraping
+curl_cffi>=0.7.0
+beautifulsoup4>=4.12
+lxml>=5.0
+
+# Search (the package was renamed duckduckgo_search -> ddgs; both are supported)
+ddgs>=9.0
+
+# LLM providers (install at least one)
+google-genai>=1.0.0
+openai>=1.40.0
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pytest>=8.0

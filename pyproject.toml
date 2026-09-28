@@ -1,0 +1,27 @@
+[project]
+name = "adolescent-medical-privacy-research"
+version = "0.1.0"
+description = "Search, scrape and LLM-screen public forum threads on adolescent medical privacy in Israel."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.7",
+    "python-dotenv>=1.0",
+    "curl_cffi>=0.7.0",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.0",
+    "ddgs>=9.0",
+]
+
+[project.optional-dependencies]
+gemini = ["google-genai>=1.0.0"]
+openai = ["openai>=1.40.0"]
+
+[project.scripts]
+research-pipeline = "src.main:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["src"]

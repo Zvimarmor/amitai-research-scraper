@@ -1,0 +1,8 @@
+# Proxies the browser's same-origin /api/* calls to the Mac mini via the tunnel,
+# so the page needs no CORS grant and no hard-coded backend hostname.
+# Equivalent to the single line in _redirects — keep one, not both.
+[[redirects]]
+  from = "/api/*"
+  to = "https://YOUR-TUNNEL-HOSTNAME/api/:splat"
+  status = 200
+  force = true

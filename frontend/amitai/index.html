@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מנוע מחקר — פרטיות רפואית בגיל ההתבגרות</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Heebo', 'system-ui', '-apple-system', 'sans-serif'] },
+        colors: {
+          ink:   { 900: '#0d0d0d', 800: '#171717', 700: '#212121', 600: '#2f2f2f', 500: '#424242' },
+          paper: { 50: '#ffffff', 100: '#f9f9f9', 200: '#ececec', 300: '#d9d9d9' },
+        },
+      },
+    },
+  };
+</script>
+<style>
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #c7c7c7; border-radius: 9999px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  .fade-in { animation: fade .28s ease both; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  #prompt { field-sizing: content; }
+  mark { background: #fde68a; color: inherit; border-radius: 3px; padding: 0 2px; }
+  .chip-on  { background: #0d0d0d; color: #fff; border-color: #0d0d0d; }
+  .chip-off { background: #fff; color: #2f2f2f; border-color: #d9d9d9; }
+</style>
+</head>
+<body class="bg-paper-100 text-ink-800 font-sans antialiased h-screen overflow-hidden">
+
+<div class="flex h-full">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside id="sidebar"
+         class="w-72 shrink-0 bg-ink-900 text-paper-200 flex flex-col transition-all duration-300 overflow-hidden">
+    <div class="p-3 flex items-center justify-between">
+      <span class="text-sm font-semibold tracking-tight px-2">מנוע מחקר</span>
+      <button id="closeSidebar" title="כווץ סרגל" class="p-2 rounded-lg hover:bg-ink-700 transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-3 pb-3 space-y-5">
+
+      <!-- live metrics -->
+      <section>
+        <h2 class="text-[11px] uppercase tracking-wider text-paper-300/60 px-2 mb-2">מדדים בזמן אמת</h2>
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between rounded-xl bg-ink-800 px-3 py-2.5">
+            <span class="text-[13px] text-paper-300">נסרקו</span>
+            <span id="mScanned" class="text-base font-semibold tabular-nums">0</span>
+          </div>
+          <div class="flex items-center justify-between rounded-xl bg-ink-800 px-3 py-2.5">
+            <span class="text-[13px] text-paper-300">עברו סינון ראשוני</span>
+            <span id="mRegex" class="text-base font-semibold tabular-nums text-amber-300">0</span>
+          </div>
+          <div class="flex items-center justify-between rounded-xl bg-ink-800 px-3 py-2.5">
+            <span class="text-[13px] text-paper-300">אושרו ע״י AI</span>
+            <span id="mRelevant" class="text-base font-semibold tabular-nums text-emerald-300">0</span>
+          </div>
+        </div>
+        <div id="runMeta" class="mt-2 px-2 text-[11px] leading-relaxed text-paper-300/50"></div>
+      </section>
+
+      <!-- topics -->
+      <section>
+        <h2 class="text-[11px] uppercase tracking-wider text-paper-300/60 px-2 mb-2">נושאים</h2>
+        <div class="space-y-0.5">
+          <label class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-ink-800 cursor-pointer">
+            <input type="checkbox" class="theme accent-white w-4 h-4" value="t1d" checked>
+            <span class="text-[13px]">סוכרת נעורים</span>
+          </label>
+          <label class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-ink-800 cursor-pointer">
+            <input type="checkbox" class="theme accent-white w-4 h-4" value="psychiatric" checked>
+            <span class="text-[13px]">טיפול נפשי</span>
+          </label>
+          <label class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-ink-800 cursor-pointer">
+            <input type="checkbox" class="theme accent-white w-4 h-4" value="privacy">
+            <span class="text-[13px]">פרטיות</span>
+          </label>
+          <label class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-ink-800 cursor-pointer">
+            <input type="checkbox" class="theme accent-white w-4 h-4" value="autonomy">
+            <span class="text-[13px]">אוטונומיה</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- sources -->
+      <section>
+        <h2 class="text-[11px] uppercase tracking-wider text-paper-300/60 px-2 mb-2">מקורות</h2>
+        <div class="space-y-0.5">
+          <label class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-ink-800 cursor-pointer">
+            <input type="checkbox" class="site accent-white w-4 h-4" value="stips.co.il" checked>
+            <span class="text-[13px]">Stips</span>
+          </label>
+          <label class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-ink-800 cursor-pointer">
+            <input type="checkbox" class="site accent-white w-4 h-4" value="fxp.co.il" checked>
+            <span class="text-[13px]">FXP</span>
+          </label>
+          <label class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-ink-800 cursor-pointer">
+            <input type="checkbox" class="site accent-white w-4 h-4" value="reddit.com">
+            <span class="text-[13px]">Reddit <span class="text-paper-300/40">(חסום)</span></span>
+          </label>
+        </div>
+      </section>
+
+      <!-- run options -->
+      <section>
+        <h2 class="text-[11px] uppercase tracking-wider text-paper-300/60 px-2 mb-2">הגדרות ריצה</h2>
+        <label class="flex items-center justify-between px-2 py-1.5">
+          <span class="text-[13px]">מספר פוסטים</span>
+          <input id="limit" type="number" min="1" max="200" value="10"
+                 class="w-16 bg-ink-800 border border-ink-600 rounded-lg px-2 py-1 text-[13px] text-center">
+        </label>
+        <label class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-ink-800 cursor-pointer">
+          <input id="requireAdolescent" type="checkbox" class="accent-white w-4 h-4">
+          <span class="text-[13px]">דרוש אזכור גיל התבגרות</span>
+        </label>
+        <label class="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-ink-800 cursor-pointer">
+          <input id="relevantOnly" type="checkbox" class="accent-white w-4 h-4" checked>
+          <span class="text-[13px]">ייצוא: רלוונטיים בלבד</span>
+        </label>
+      </section>
+
+      <button id="exportBtn"
+              class="w-full flex items-center justify-center gap-2 rounded-xl border border-ink-600
+                     px-3 py-2.5 text-[13px] font-medium hover:bg-ink-800 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+        </svg>
+        ייצוא CSV
+      </button>
+
+      <!-- connection -->
+      <section class="pt-1 border-t border-ink-700">
+        <button id="connToggle"
+                class="w-full flex items-center justify-between px-2 py-2 text-[11px]
+                       uppercase tracking-wider text-paper-300/60 hover:text-paper-200">
+          <span>חיבור לשרת</span>
+          <span id="connDot" class="w-2 h-2 rounded-full bg-paper-300/40"></span>
+        </button>
+        <div id="connPanel" class="hidden space-y-2 px-2 pb-2">
+          <input id="apiBase" placeholder="/api"
+                 class="w-full bg-ink-800 border border-ink-600 rounded-lg px-2.5 py-2
+                        text-[12px] font-mono" dir="ltr">
+          <input id="apiToken" type="password" placeholder="API_AUTH_TOKEN"
+                 class="w-full bg-ink-800 border border-ink-600 rounded-lg px-2.5 py-2
+                        text-[12px] font-mono" dir="ltr">
+          <p id="connMsg" class="text-[11px] text-paper-300/50 leading-relaxed"></p>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN ==================== -->
+  <main class="flex-1 flex flex-col min-w-0 bg-paper-50">
+
+    <header class="h-14 shrink-0 flex items-center gap-3 px-4 border-b border-paper-200">
+      <button id="openSidebar" class="hidden p-2 rounded-lg hover:bg-paper-200 transition" title="פתח סרגל">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <h1 class="text-[15px] font-semibold tracking-tight">פרטיות רפואית בגיל ההתבגרות</h1>
+      <span id="stateBadge"
+            class="text-[11px] px-2 py-0.5 rounded-full bg-paper-200 text-ink-500">ממתין</span>
+      <div class="flex-1"></div>
+      <span id="statusMsg" class="text-[12px] text-ink-500 truncate max-w-xs"></span>
+    </header>
+
+    <!-- canvas -->
+    <div id="canvas" class="flex-1 overflow-y-auto">
+      <!-- starter screen -->
+      <div id="starter" class="h-full flex flex-col items-center justify-center px-6 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-ink-900 text-white flex items-center justify-center mb-5">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="7" stroke-linecap="round"/><path stroke-linecap="round" d="m20 20-4.2-4.2"/>
+          </svg>
+        </div>
+        <h2 class="text-2xl font-semibold tracking-tight mb-2">במה נחקור היום?</h2>
+        <p class="text-[13px] text-ink-500 mb-7 max-w-md leading-relaxed">
+          תאר/י את התופעה שמעניינת אותך. המנוע יחפש בפורומים ישראליים, יסנן, ויעביר כל פוסט לניתוח AI.
+        </p>
+        <div id="suggestions" class="grid sm:grid-cols-2 gap-2.5 w-full max-w-2xl"></div>
+      </div>
+
+      <!-- results stream -->
+      <div id="stream" class="hidden max-w-3xl mx-auto px-5 py-6 space-y-3"></div>
+    </div>
+
+    <!-- ==================== INPUT BAR ==================== -->
+    <div class="shrink-0 px-4 pb-4 pt-1 bg-paper-50">
+      <div class="max-w-3xl mx-auto">
+        <div class="rounded-[26px] border border-paper-300 bg-paper-50 shadow-sm
+                    focus-within:border-ink-500 transition px-3 pt-2.5 pb-2">
+
+          <!-- keyword chips -->
+          <div id="chipRow" class="flex flex-wrap gap-1.5 mb-2"></div>
+
+          <textarea id="prompt" rows="1" placeholder="למשל: נוער שמסתיר טיפול נפשי מההורים…"
+                    class="w-full resize-none bg-transparent outline-none text-[15px]
+                           leading-relaxed placeholder:text-ink-500/50 max-h-40 px-1"></textarea>
+
+          <div class="flex items-center gap-2 mt-1">
+            <!-- AI expansion toggle -->
+            <button id="expandToggle" role="switch" aria-checked="false"
+                    class="flex items-center gap-2 px-2.5 py-1.5 rounded-full border border-paper-300
+                           text-[12px] text-ink-500 hover:bg-paper-100 transition">
+              <span class="relative w-8 h-4 rounded-full bg-paper-300 transition-colors" id="expandTrack">
+                <span id="expandKnob"
+                      class="absolute top-0.5 right-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform"></span>
+              </span>
+              הרחבת שאילתה ע״י AI
+            </button>
+
+            <button id="addKeyword"
+                    class="px-2.5 py-1.5 rounded-full border border-paper-300 text-[12px]
+                           text-ink-500 hover:bg-paper-100 transition">
+              + מילת מפתח
+            </button>
+
+            <div class="flex-1"></div>
+
+            <!-- dynamic action button -->
+            <button id="actionBtn" title="התחל חיפוש"
+                    class="w-9 h-9 rounded-full bg-ink-900 text-white flex items-center justify-center
+                           hover:opacity-90 disabled:opacity-25 transition">
+              <svg id="iconStart" class="w-5 h-5" fill="none" stroke="currentColor"
+                   stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m0 0l-6 6m6-6l6 6"/>
+              </svg>
+              <span id="iconStop" class="hidden w-3 h-3 rounded-sm bg-white"></span>
+            </button>
+          </div>
+        </div>
+        <p class="text-[11px] text-ink-500/60 text-center mt-2">
+          נתוני מחקר רגישים — אין לשתף ציטוטים מזהים ללא אנונימיזציה.
+        </p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
+  (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ---------------- connection settings ---------------- */
+
+const store = {
+  get base()  { return localStorage.getItem("apiBase") || "/api"; },
+  set base(v) { localStorage.setItem("apiBase", v); },
+  get token()  { return localStorage.getItem("apiToken") || ""; },
+  set token(v) { localStorage.setItem("apiToken", v); },
+};
+
+$("apiBase").value = store.base;
+$("apiToken").value = store.token;
+$("apiBase").addEventListener("change", (e) => { store.base = e.target.value.trim(); health(); });
+$("apiToken").addEventListener("change", (e) => { store.token = e.target.value.trim(); health(); });
+$("connToggle").addEventListener("click", () => $("connPanel").classList.toggle("hidden"));
+
+const apiBase = () => (store.base || "/api").replace(/\/+$/, "");
+
+async function api(path, { method = "GET", body, raw = false } = {}) {
+  const res = await fetch(apiBase() + path, {
+    method,
+    headers: {
+      ...(body ? { "Content-Type": "application/json" } : {}),
+      ...(store.token ? { Authorization: "Bearer " + store.token } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (res.status === 401) throw new Error("401 — טוקן שגוי או חסר. פתח/י ״חיבור לשרת״ בסרגל.");
+  if (!res.ok) throw new Error((await res.text().catch(() => "")) || `HTTP ${res.status}`);
+  return raw ? res : res.json();
+}
+
+function setConn(ok, msg) {
+  $("connDot").className = "w-2 h-2 rounded-full " +
+    (ok ? "bg-emerald-400" : "bg-red-400");
+  $("connMsg").textContent = msg || "";
+  if (!ok) $("connPanel").classList.remove("hidden");
+}
+
+async function health() {
+  try {
+    const h = await api("/health");
+    setConn(true, "מחובר · מצב: " + h.state);
+  } catch (e) {
+    setConn(false, e.message);
+  }
+}
+
+/* ---------------- sidebar collapse ---------------- */
+
+const setSidebar = (open) => {
+  $("sidebar").classList.toggle("w-72", open);
+  $("sidebar").classList.toggle("w-0", !open);
+  $("openSidebar").classList.toggle("hidden", open);
+};
+$("closeSidebar").addEventListener("click", () => setSidebar(false));
+$("openSidebar").addEventListener("click", () => setSidebar(true));
+
+/* ---------------- keyword chips ---------------- */
+
+let keywords = [];
+
+function renderChips() {
+  $("chipRow").innerHTML = keywords.map((k, i) => `
+    <span class="inline-flex items-center gap-1 rounded-full bg-paper-200 pr-2.5 pl-1.5 py-1 text-[12px]">
+      <span dir="auto">${esc(k)}</span>
+      <button data-i="${i}" class="rmChip w-4 h-4 rounded-full hover:bg-paper-300
+              flex items-center justify-center text-ink-500 leading-none">&times;</button>
+    </span>`).join("");
+  $("chipRow").querySelectorAll(".rmChip").forEach((b) =>
+    b.addEventListener("click", () => { keywords.splice(+b.dataset.i, 1); renderChips(); }));
+}
+
+$("addKeyword").addEventListener("click", () => {
+  const v = prompt("מילת מפתח להוספה לכל שאילתה:");
+  if (v && v.trim()) { keywords.push(v.trim()); renderChips(); }
+});
+
+/* ---------------- AI expansion toggle ---------------- */
+
+let expand = false;
+$("expandToggle").addEventListener("click", () => {
+  expand = !expand;
+  $("expandToggle").setAttribute("aria-checked", String(expand));
+  $("expandTrack").classList.toggle("bg-ink-900", expand);
+  $("expandTrack").classList.toggle("bg-paper-300", !expand);
+  $("expandKnob").style.transform = expand ? "translateX(-16px)" : "none";
+  $("expandToggle").classList.toggle("border-ink-900", expand);
+  $("expandToggle").classList.toggle("text-ink-900", expand);
+});
+
+/* ---------------- suggested prompts ---------------- */
+
+const SUGGESTIONS = [
+  { t: "הסתרת טיפול נפשי", p: "נוער שמבקש טיפול נפשי בלי ידיעת ההורים" },
+  { t: "סודיות אצל הרופא", p: "האם הרופא מחויב לספר להורים על מה שאמרתי" },
+  { t: "אוטונומיה בסוכרת", p: "מתבגר עם סוכרת נעורים שרוצה לנהל את הטיפול לבד" },
+  { t: "מעורבות הורית", p: "הורים שקוראים את יומן הסוכר או נכנסים לאפליקציה" },
+];
+
+$("suggestions").innerHTML = SUGGESTIONS.map((s) => `
+  <button class="sugg text-right rounded-2xl border border-paper-300 px-4 py-3
+                 hover:bg-paper-100 hover:border-ink-500/30 transition" data-p="${esc(s.p)}">
+    <span class="block text-[13px] font-medium mb-0.5">${esc(s.t)}</span>
+    <span class="block text-[12px] text-ink-500 leading-snug">${esc(s.p)}</span>
+  </button>`).join("");
+
+$("suggestions").querySelectorAll(".sugg").forEach((b) =>
+  b.addEventListener("click", () => {
+    $("prompt").value = b.dataset.p;
+    $("prompt").focus();
+  }));
+
+/* ---------------- result cards ---------------- */
+
+const BADGE = {
+  stips:  ["Stips", "bg-violet-100 text-violet-700"],
+  fxp:    ["FXP", "bg-sky-100 text-sky-700"],
+  reddit: ["Reddit", "bg-orange-100 text-orange-700"],
+};
+
+function highlight(text, terms) {
+  let out = esc(text);
+  (terms || []).filter(Boolean).forEach((t) => {
+    const safe = esc(t).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    out = out.replace(new RegExp(safe, "g"), (m) => `<mark>${m}</mark>`);
+  });
+  return out;
+}
+
+function card(p) {
+  const [label, cls] = BADGE[p.source] || [p.source || "מקור", "bg-paper-200 text-ink-500"];
+  const pct = Math.round((p.confidence || 0) * 100);
+  const terms = [...(p.medical_terms || []), ...(p.privacy_terms || [])];
+
+  const verdict = p.error
+    ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-red-50 text-red-600">שגיאה</span>`
+    : p.is_relevant
+      ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">רלוונטי</span>`
+      : p.analyzed
+        ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-paper-200 text-ink-500">לא רלוונטי</span>`
+        : `<span class="text-[11px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">ממתין לניתוח</span>`;
+
+  const tension = p.privacy_tension
+    ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-700">מתח פרטיות</span>` : "";
+
+  const quotes = (p.key_quotes || []).length ? `
+    <div class="mt-3 space-y-1.5">
+      ${p.key_quotes.map((q) => `
+        <blockquote dir="auto" class="border-r-[3px] border-amber-300 bg-amber-50/40
+                    rounded-l-lg px-3 py-2 text-[13px] leading-relaxed">
+          ${highlight(q, terms)}
+        </blockquote>`).join("")}
+    </div>` : "";
+
+  const el = document.createElement("article");
+  el.className = "fade-in rounded-2xl border border-paper-200 bg-paper-50 p-4 hover:border-paper-300 transition";
+  el.innerHTML = `
+    <div class="flex items-center gap-2 flex-wrap mb-2">
+      <span class="text-[11px] font-medium px-2 py-0.5 rounded-full ${cls}">${esc(label)}</span>
+      ${verdict} ${tension}
+      ${p.topic ? `<span class="text-[11px] text-ink-500">${esc(p.topic)}</span>` : ""}
+      <div class="flex-1"></div>
+      <a href="${esc(p.url)}" target="_blank" rel="noopener"
+         class="text-[11px] text-ink-500 hover:text-ink-900 underline decoration-paper-300">מקור</a>
+    </div>
+
+    <h3 dir="auto" class="text-[14px] font-semibold leading-snug mb-2">${esc(p.title || p.url)}</h3>
+
+    ${p.analyzed ? `
+      <div class="flex items-center gap-2 mb-2">
+        <div class="flex-1 h-1.5 rounded-full bg-paper-200 overflow-hidden">
+          <div class="h-full rounded-full ${p.is_relevant ? "bg-emerald-500" : "bg-paper-300"}"
+               style="width:${pct}%"></div>
+        </div>
+        <span class="text-[11px] tabular-nums text-ink-500 w-9 text-left">${pct}%</span>
+      </div>` : ""}
+
+    ${p.summary ? `
+      <details class="group">
+        <summary class="cursor-pointer text-[13px] text-ink-500 hover:text-ink-900 list-none
+                        flex items-center gap-1">
+          <svg class="w-3.5 h-3.5 transition-transform group-open:rotate-90 rtl:rotate-180 rtl:group-open:-rotate-90"
+               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+          </svg>
+          סיכום הניתוח
+        </summary>
+        <p dir="auto" class="mt-2 text-[13px] leading-relaxed text-ink-600">${esc(p.summary)}</p>
+      </details>` : ""}
+
+    ${quotes}
+    ${p.error ? `<p class="mt-2 text-[12px] text-red-600" dir="auto">${esc(p.error)}</p>` : ""}
+  `;
+  return el;
+}
+
+/* ---------------- stream (flicker-free incremental render) ---------------- */
+
+const seen = new Set();
+
+function showStream() {
+  $("starter").classList.add("hidden");
+  $("stream").classList.remove("hidden");
+}
+
+function appendItems(items) {
+  const canvas = $("canvas");
+  const atBottom = canvas.scrollHeight - canvas.scrollTop - canvas.clientHeight < 120;
+  let added = 0;
+  // status.feed is newest-first; render oldest-first so the log reads top-down.
+  for (const p of [...items].reverse()) {
+    const key = p.url || p.id;
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    $("stream").appendChild(card(p));
+    added++;
+  }
+  if (added && atBottom) canvas.scrollTop = canvas.scrollHeight;
+}
+
+function note(text) {
+  showStream();
+  const el = document.createElement("div");
+  el.className = "fade-in text-[12px] text-ink-500 text-center py-1";
+  el.textContent = text;
+  $("stream").appendChild(el);
+}
+
+/* ---------------- run state ---------------- */
+
+const STATE_LABEL = {
+  idle: "ממתין", running: "פועל", stopping: "עוצר",
+  stopped: "נעצר", done: "הושלם", error: "שגיאה",
+};
+const STATE_CLS = {
+  running: "bg-emerald-50 text-emerald-700", stopping: "bg-amber-50 text-amber-700",
+  error: "bg-red-50 text-red-600", done: "bg-sky-50 text-sky-700",
+};
+
+let running = false;
+let timer = null;
+
+function setRunning(on) {
+  running = on;
+  $("iconStart").classList.toggle("hidden", on);
+  $("iconStop").classList.toggle("hidden", !on);
+  $("actionBtn").className = "w-9 h-9 rounded-full text-white flex items-center justify-center " +
+    "hover:opacity-90 disabled:opacity-25 transition " + (on ? "bg-red-600" : "bg-ink-900");
+  $("actionBtn").title = on ? "עצור" : "התחל חיפוש";
+}
+
+function paint(s) {
+  // textContent-only updates: no DOM teardown, so nothing flickers while polling.
+  $("mScanned").textContent = s.scanned ?? 0;
+  $("mRegex").textContent = s.regex_passed ?? 0;
+  $("mRelevant").textContent = s.llm_relevant ?? 0;
+  $("statusMsg").textContent = s.message || "";
+  $("stateBadge").textContent = STATE_LABEL[s.state] || s.state;
+  $("stateBadge").className = "text-[11px] px-2 py-0.5 rounded-full " +
+    (STATE_CLS[s.state] || "bg-paper-200 text-ink-500");
+
+  const meta = [];
+  if (s.queries) meta.push(`${s.queries} שאילתות`);
+  if (s.urls_found) meta.push(`${s.urls_found} כתובות`);
+  if (s.errors) meta.push(`${s.errors} שגיאות`);
+  if (s.expanded_terms?.length) meta.push("הרחבה: " + s.expanded_terms.join(", "));
+  $("runMeta").textContent = meta.join(" · ");
+
+  if (s.feed?.length) { showStream(); appendItems(s.feed); }
+
+  const active = s.state === "running" || s.state === "stopping";
+  if (running !== active) setRunning(active);
+  if (!active && timer) { clearInterval(timer); timer = null; }
+}
+
+async function poll() {
+  try { paint(await api("/search/status")); }
+  catch (e) { $("statusMsg").textContent = e.message; setConn(false, e.message); }
+}
+
+async function start() {
+  const themes = [...document.querySelectorAll(".theme:checked")].map((c) => c.value);
+  const sites  = [...document.querySelectorAll(".site:checked")].map((c) => c.value);
+  if (!themes.length) return note("בחר/י לפחות נושא אחד.");
+  if (!sites.length)  return note("בחר/י לפחות מקור אחד.");
+
+  seen.clear();
+  $("stream").innerHTML = "";
+  showStream();
+  setRunning(true);
+
+  try {
+    const s = await api("/search/start", {
+      method: "POST",
+      body: {
+        prompt: $("prompt").value.trim(),
+        keywords, themes, sites,
+        limit: Math.max(1, Math.min(200, +$("limit").value || 10)),
+        expand,
+        use_llm: true,
+        require_adolescent: $("requireAdolescent").checked,
+      },
+    });
+    paint(s);
+    if (!timer) timer = setInterval(poll, 1500);
+  } catch (e) {
+    setRunning(false);
+    note("לא ניתן להתחיל: " + e.message);
+  }
+}
+
+async function stop() {
+  try { paint(await api("/search/stop", { method: "POST" })); }
+  catch (e) { note("עצירה נכשלה: " + e.message); }
+}
+
+$("actionBtn").addEventListener("click", () => (running ? stop() : start()));
+
+$("prompt").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!running) start(); }
+});
+
+/* ---------------- export ---------------- */
+
+$("exportBtn").addEventListener("click", async () => {
+  const btn = $("exportBtn");
+  const original = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = "מייצא…";
+  try {
+    // Fetched (not window.open) so the Authorization header travels with it.
+    const res = await api("/posts/export?relevant_only=" + $("relevantOnly").checked, { raw: true });
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `screened-posts-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    btn.innerHTML = original;
+  } catch (e) {
+    btn.textContent = "ייצוא נכשל";
+    note("ייצוא נכשל: " + e.message);
+    setTimeout(() => { btn.innerHTML = original; }, 2500);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ---------------- boot ---------------- */
+
+renderChips();
+health();
+poll();
+</script>
+</body>
+</html>
