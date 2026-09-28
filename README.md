@@ -1,8 +1,29 @@
-# Adolescent Medical Privacy — Research Scraping & Screening Engine
+# Adolescent Medical Privacy Research Platform
 
-A modular pipeline for an academic study on adolescent medical privacy in Israel:
-the tension between adolescent autonomy and parental involvement, in **Type 1
-Diabetes** and **psychiatric / mental-health care**.
+An automated academic research platform for investigating how Israeli youth
+discuss medical privacy, confidentiality, and parental monitoring across public
+online forums (Stips, FXP). The study question is the tension between adolescent
+autonomy and parental involvement, in **Type 1 Diabetes** and **psychiatric /
+mental-health care**.
+
+**How it works**
+
+- **Collection** — scans public youth discussions for intersections between
+  medical topics (mental health, Type 1 Diabetes, medications) and parental
+  boundaries.
+- **Two-stage filtering** — a targeted keyword/regex co-occurrence gate, then
+  Gemini screening to verify genuine privacy friction and exclude irrelevant
+  posts.
+- **Research analysis** — tags key quotes, assesses privacy tension, and exports
+  structured CSV datasets for qualitative analysis.
+
+**On privacy.** Every discussion collected was posted publicly. Source links and
+verbatim quotes are retained deliberately, because a qualitative finding has to
+be traceable back to its source to be verifiable — which means the corpus and its
+exports are **identifiable data, not anonymised**. Identifying details must be
+removed before any publication or sharing; see the checklist in
+[ROADMAP_TO_PRODUCT.md](ROADMAP_TO_PRODUCT.md). The database and CSVs are
+gitignored and should stay on an encrypted volume.
 
 ```
 themes ──▶ searcher (DDG dorks) ──▶ fetcher (curl_cffi) ──▶ screener ──▶ db (SQLite)
