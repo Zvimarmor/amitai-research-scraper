@@ -117,7 +117,24 @@ network-bound, so a thread keeps the event loop free to answer status polls
 mid-run. Stop is cooperative: the flag is polled between each search query and
 each fetch, so nothing is killed mid-request.
 
-### 2. Tunnel it
+### 2. One-command launch (API + tunnel + deploy)
+
+```bash
+scripts/start_production.sh            # add --no-push to skip the git commit
+```
+
+Starts the API, opens a Cloudflare quick tunnel, waits for both to be healthy,
+rewrites `frontend/_redirects`, `frontend/amitai/_redirects` and the
+`netlify.toml` rule to the new hostname, then commits and pushes so Netlify
+redeploys. It refuses to start if `API_AUTH_TOKEN` is still the dev default,
+since the tunnel exposes the API to the internet. Ctrl-C stops both processes;
+logs are under `runs/production/`.
+
+A **quick tunnel gets a new hostname every restart**, so each run produces
+another commit. For a stable hostname use a named tunnel (below) and the
+redirect files stop changing.
+
+### 2b. Tunnel it manually
 
 ```bash
 brew install cloudflared
