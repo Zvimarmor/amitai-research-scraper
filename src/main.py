@@ -181,7 +181,7 @@ def cmd_rescreen(args: argparse.Namespace) -> int:
     without hitting the forums again.
     """
     db = Database()
-    screener = LLMScreener(provider=args.provider, delay=args.delay)
+    screener = LLMScreener(provider=args.provider, model=args.model, delay=args.delay)
     log.info("Rescreening with %s / %s (%.1fs between calls)",
              screener.provider, screener.model, args.delay)
 
@@ -284,6 +284,9 @@ def build_parser() -> argparse.ArgumentParser:
     rescreen.add_argument("--force", action="store_true",
                           help="re-screen posts that already have a verdict")
     rescreen.add_argument("--provider", choices=["gemini", "openai"], default=None)
+    rescreen.add_argument("--model", default=None,
+                          help="pin one model for the whole pass, so verdicts stay "
+                               "comparable across a corpus screened over several runs")
     rescreen.set_defaults(func=cmd_rescreen)
 
     show = sub.add_parser("show", help="dump stored rows as JSON")

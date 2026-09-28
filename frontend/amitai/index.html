@@ -580,6 +580,14 @@ $("prompt").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!running) start(); }
 });
 
+// `field-sizing: content` is not everywhere yet, so grow the box manually too.
+const autosize = () => {
+  const el = $("prompt");
+  el.style.height = "auto";
+  el.style.height = Math.min(el.scrollHeight, 160) + "px";
+};
+$("prompt").addEventListener("input", autosize);
+
 /* ---------------- export ---------------- */
 
 $("exportBtn").addEventListener("click", async () => {

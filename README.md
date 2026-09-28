@@ -82,10 +82,25 @@ LLM passes carry the precision burden. `--strict-queries` drops tiers 2–3.
 .venv/bin/python -m src.server          # http://127.0.0.1:8000, docs at /docs
 ```
 
-Environment (`.env`): `API_HOST`, `API_PORT`, `ALLOWED_ORIGINS`
-(comma-separated; default `*` — narrow it to `https://zvimarmor.com` before
-exposing a tunnel), and optionally `ALLOWED_ORIGIN_REGEX` for Netlify deploy
-previews.
+Environment (`.env`): `API_HOST`, `API_PORT`, `API_AUTH_TOKEN`, `ALLOWED_ORIGINS`
+(comma-separated, strictly enforced, default `https://zvimarmor.com`; localhost
+dev origins are always allowed on top of it), and optionally
+`ALLOWED_ORIGIN_REGEX` for Netlify deploy previews.
+
+**Auth.** Every endpoint except `/api/health` requires a bearer token:
+
+```bash
+curl -H "Authorization: Bearer $API_AUTH_TOKEN" http://127.0.0.1:8000/api/stats
+```
+
+Set `API_AUTH_TOKEN` in `.env` — generate one with
+`python -c "import secrets; print(secrets.token_urlsafe(32))"`. If it is unset
+the server falls back to the insecure `local-dev-key` and logs a warning on
+startup; never expose a tunnel in that state. In the web UI, paste the same
+token under **חיבור לשרת** in the sidebar (it is kept in `localStorage`).
+
+`/api/health` stays open deliberately, so a tunnel or uptime check can confirm
+the process is up without holding the secret.
 
 | Endpoint | Purpose |
 |---|---|
@@ -94,7 +109,8 @@ previews.
 | `GET  /api/search/status` | `state`, `scanned`, `regex_passed`, `llm_relevant`, `urls_found`, `expanded_terms`, plus the live results feed. |
 | `GET  /api/posts` | Stored results, paginated (`limit`, `offset`) and filtered (`relevant_only`, `source`, `min_confidence`, `search`). |
 | `GET  /api/posts/export` | Same filters, downloaded as UTF-8 BOM CSV (opens cleanly in Excel with Hebrew). |
-| `GET  /api/health`, `/api/stats` | Liveness and row counts. |
+| `GET  /api/health` | Liveness — the one endpoint that needs no token. |
+| `GET  /api/stats` | Row counts (total / analyzed / relevant). |
 
 One run at a time, on a daemon thread — the engine is synchronous and
 network-bound, so a thread keeps the event loop free to answer status polls
