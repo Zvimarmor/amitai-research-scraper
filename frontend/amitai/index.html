@@ -143,23 +143,14 @@
         ייצוא CSV
       </button>
 
-      <!-- connection -->
+      <!-- connection status (read-only: auth is handled by the Netlify proxy) -->
       <section class="pt-1 border-t border-ink-700">
-        <button id="connToggle"
-                class="w-full flex items-center justify-between px-2 py-2 text-[11px]
-                       uppercase tracking-wider text-paper-300/60 hover:text-paper-200">
-          <span>חיבור לשרת</span>
+        <div class="w-full flex items-center justify-between px-2 py-2 text-[11px]
+                    uppercase tracking-wider text-paper-300/60">
+          <span id="connLabel">מתחבר…</span>
           <span id="connDot" class="w-2 h-2 rounded-full bg-paper-300/40"></span>
-        </button>
-        <div id="connPanel" class="hidden space-y-2 px-2 pb-2">
-          <input id="apiBase" placeholder="/api"
-                 class="w-full bg-ink-800 border border-ink-600 rounded-lg px-2.5 py-2
-                        text-[12px] font-mono" dir="ltr">
-          <input id="apiToken" type="password" placeholder="API_AUTH_TOKEN"
-                 class="w-full bg-ink-800 border border-ink-600 rounded-lg px-2.5 py-2
-                        text-[12px] font-mono" dir="ltr">
-          <p id="connMsg" class="text-[11px] text-paper-300/50 leading-relaxed"></p>
         </div>
+        <p id="connMsg" class="px-2 pb-2 text-[11px] text-paper-300/50 leading-relaxed"></p>
       </section>
     </div>
   </aside>
@@ -262,18 +253,14 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
 
 /* ---------------- connection settings ---------------- */
 
+// Visitors send no credentials: the Netlify edge function on /api/* attaches the
+// bearer token server-side, so the secret never ships to the browser. The two
+// localStorage keys below exist only for running the page against a backend
+// directly (no proxy) during local development.
 const store = {
   get base()  { return localStorage.getItem("apiBase") || "/api"; },
-  set base(v) { localStorage.setItem("apiBase", v); },
-  get token()  { return localStorage.getItem("apiToken") || ""; },
-  set token(v) { localStorage.setItem("apiToken", v); },
+  get token() { return localStorage.getItem("api_token") || ""; },
 };
-
-$("apiBase").value = store.base;
-$("apiToken").value = store.token;
-$("apiBase").addEventListener("change", (e) => { store.base = e.target.value.trim(); health(); });
-$("apiToken").addEventListener("change", (e) => { store.token = e.target.value.trim(); health(); });
-$("connToggle").addEventListener("click", () => $("connPanel").classList.toggle("hidden"));
 
 const apiBase = () => (store.base || "/api").replace(/\/+$/, "");
 
@@ -282,11 +269,15 @@ async function api(path, { method = "GET", body, raw = false } = {}) {
     method,
     headers: {
       ...(body ? { "Content-Type": "application/json" } : {}),
+      // Only set when developing against the API directly; in production the
+      // proxy supplies it and this is absent.
       ...(store.token ? { Authorization: "Bearer " + store.token } : {}),
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (res.status === 401) throw new Error("401 — טוקן שגוי או חסר. פתח/י ״חיבור לשרת״ בסרגל.");
+  if (res.status === 401) {
+    throw new Error("401 — השרת דחה את הבקשה. בדוק/י שה-API_AUTH_TOKEN מוגדר ב-Netlify.");
+  }
   if (!res.ok) throw new Error((await res.text().catch(() => "")) || `HTTP ${res.status}`);
   return raw ? res : res.json();
 }
@@ -294,14 +285,14 @@ async function api(path, { method = "GET", body, raw = false } = {}) {
 function setConn(ok, msg) {
   $("connDot").className = "w-2 h-2 rounded-full " +
     (ok ? "bg-emerald-400" : "bg-red-400");
+  $("connLabel").textContent = ok ? "מחובר" : "לא מחובר";
   $("connMsg").textContent = msg || "";
-  if (!ok) $("connPanel").classList.remove("hidden");
 }
 
 async function health() {
   try {
     const h = await api("/health");
-    setConn(true, "מחובר · מצב: " + h.state);
+    setConn(true, "מצב מנוע: " + h.state);
   } catch (e) {
     setConn(false, e.message);
   }

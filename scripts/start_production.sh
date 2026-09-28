@@ -126,6 +126,13 @@ for f in frontend/amitai/_redirects frontend/_redirects; do
   fi
 done
 
+> netlify/edge-functions/origin.ts cat <<EOF
+// Rewritten by scripts/start_production.sh on every launch. Not a secret: the
+// tunnel hostname is public, and the bearer token is what protects the API.
+export const API_ORIGIN = "$TUNNEL_URL";
+EOF
+git diff --quiet -- netlify/edge-functions/origin.ts || CHANGED+=("netlify/edge-functions/origin.ts")
+
 if [[ -f frontend/netlify.toml ]]; then
   .venv/bin/python - "$TUNNEL_URL" <<'PY'
 import re, sys, pathlib
@@ -148,7 +155,8 @@ log "redirect target: $TUNNEL_URL/api/:splat"
 
 if (( PUSH )); then
   git add -- frontend/amitai/_redirects frontend/_redirects \
-             frontend/amitai/index.html frontend/netlify.toml 2>/dev/null || true
+             frontend/amitai/index.html frontend/netlify.toml \
+             netlify/edge-functions/origin.ts 2>/dev/null || true
   if git diff --cached --quiet; then
     log "nothing to commit - redirect already points at this tunnel"
   else

@@ -29,11 +29,25 @@ THEMES: dict[str, dict[str, list[str]]] = {
             "משאבת אינסולין",
             "חיישן סוכר",
             "אינסולין בבית ספר",
+            # CGM hardware and the companion apps, which are where remote
+            # parental monitoring actually happens.
+            "דקסקום",
+            # Never bare "ליברה": it returns YSL perfume threads, which cost a
+            # fetch each before the regex gate discards them.
+            "חיישן ליברה",
+            "ליברה סוכרת",
+            "סנסור סוכר",
+            "מד סוכר רציף",
+            "אפליקציית סוכרת",
+            "התראות סוכר",
         ],
         "en": [
             "type 1 diabetes teen",
             "T1D teenager parents",
             "insulin pump teen privacy",
+            "dexcom teen parents",
+            "freestyle libre teen",
+            "dexcom follow parents",
         ],
     },
     "psychiatric": {
@@ -58,11 +72,19 @@ THEMES: dict[str, dict[str, list[str]]] = {
             "הרופא סיפר להורים",
             "פרטיות רפואית נוער",
             "זכות קטין לסודיות",
+            # Remote CGM monitoring: the parent watches continuously rather than
+            # being told after the fact, so the phrasing differs from disclosure.
+            "ההורים עוקבים אחרי",
+            "מעקב הורים סוכר",
+            "ניטור מרחוק סוכרת",
+            "התראות להורים",
         ],
         "en": [
             "doctor told my parents",
             "minor medical confidentiality",
             "without my parents knowing",
+            "parents watching my dexcom",
+            "share glucose data parents",
         ],
     },
     "autonomy": {

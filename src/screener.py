@@ -20,12 +20,23 @@ MEDICAL_TERMS = [
     # Type 1 diabetes (Hebrew)
     "סוכרת", "סכרת", "אינסולין", "משאבת אינסולין", "חיישן", "רמות סוכר",
     "היפוגליקמיה", "היפרגליקמיה", "אנדוקרינולוג", "סוכרת נעורים",
+    # CGM devices and companion apps. "משאבה" and "אפליקציה" are generic on
+    # their own, but the screen requires a privacy term to co-occur, and the LLM
+    # pass makes the final call - so they widen recall without passing noise.
+    # "ליברה" and "משאבה" are deliberately NOT bare terms: Libre is also a YSL
+    # perfume and a given name, and משאבה is any pump, so bare forms let perfume
+    # and breast-pump threads through whenever a parental word co-occurs.
+    "דקסקום", "חיישן ליברה", "ליברה 2", "ליברה 3", "סנסור",
+    "מד סוכר רציף", "משאבת סוכר", "אפליקציית סוכר", "אפליקציה",
+    "התראות סוכר", "ניטור רציף",
     # Psychiatric / mental health (Hebrew)
     "פסיכיאטר", "פסיכולוג", "טיפול נפשי", "פסיכותרפיה", "אשפוז", "דיכאון",
     "חרדה", "ריטלין", "קונצרטה", "נוגדי דיכאון", "אבחון", "הפרעת קשב",
     "מרפאה", "רופא", "קופת חולים", "תיק רפואי", "מרשם",
     # English
     "diabetes", "insulin", "t1d", "glucose", "endocrinologist",
+    "dexcom", "libre", "freestyle libre", "cgm", "sensor", "glucose monitor",
+    "insulin pump", "glucose alerts",
     "psychiatrist", "therapist", "therapy", "antidepressant", "adhd",
     "medication", "diagnosis", "clinic", "medical record", "prescription",
 ]
@@ -35,10 +46,14 @@ PRIVACY_TERMS = [
     "הורים", "אמא", "אבא", "ההורים שלי", "סודיות", "פרטיות", "סוד",
     "בלי ידיעת", "בלי שההורים", "לא סיפרתי", "מסתיר", "להסתיר", "יגלו",
     "הסכמה", "חיסיון", "מידע רפואי", "לספר להורים", "אפוטרופוס",
+    # Continuous remote monitoring, as distinct from one-off disclosure.
+    "מעקב", "ניטור", "עוקבים", "עוקב אחריי", "בודקים לי", "התראות להורים",
+    "רואים לי", "מפקחים",
     # English
     "parents", "mom", "dad", "confidential", "confidentiality", "privacy",
     "secret", "without my parents", "hide", "hiding", "told my parents",
-    "consent", "guardian",
+    "consent", "guardian", "monitoring", "tracking", "watching",
+    "share my data", "parental alerts",
 ]
 
 ADOLESCENT_TERMS = [

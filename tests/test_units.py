@@ -284,3 +284,40 @@ def test_per_minute_quota_still_waits():
     """Only the daily window fails fast - a per-minute cap must still back off."""
     exc = Exception("429 RESOURCE_EXHAUSTED GenerateRequestsPerMinutePerProject-FreeTier")
     assert _backoff_for(exc, 0) >= 30.0
+
+
+# --------------------------------------------------------------------------
+# CGM vocabulary precision
+# --------------------------------------------------------------------------
+
+@pytest.mark.parametrize("text", [
+    "איזה בושם של ליברה Ysl יש לכן ואתן ממליצות",   # YSL Libre perfume
+    "רשמתי ליברה שיצאה ממש צבועה",                  # "Libre" as a given name
+    "קניתי משאבה חדשה לאמא שלי",                    # any pump, not insulin
+])
+def test_cgm_brand_names_do_not_match_unrelated_threads(text):
+    """Bare "ליברה"/"משאבה" pulled perfume and breast-pump threads into the
+    corpus, so only the qualified CGM forms are lexicon terms."""
+    assert not _matches(text, _MEDICAL)
+
+
+@pytest.mark.parametrize("text,term", [
+    ("שמתי חיישן ליברה 2 חדש", "חיישן ליברה"),
+    ("הדקסקום מחובר לאפליקציה", "דקסקום"),
+    ("משאבת אינסולין וסנסור", "משאבת אינסולין"),
+    ("my parents watch my dexcom", "dexcom"),
+])
+def test_real_cgm_terms_still_match(text, term):
+    assert term in _matches(text, _MEDICAL)
+
+
+@pytest.mark.parametrize("text,term", [
+    ("ההורים עוקבים אחרי הסוכר שלי", "עוקבים"),
+    ("הם בודקים לי את האפליקציה", "בודקים לי"),
+    ("מקבלים התראות להורים על כל ירידה", "התראות להורים"),
+    ("יש מעקב מרחוק על הנתונים", "מעקב"),
+])
+def test_remote_monitoring_terms_are_privacy_terms(text, term):
+    """Continuous CGM monitoring is a different privacy shape from one-off
+    disclosure, so the monitoring vocabulary has to register as privacy."""
+    assert term in _matches(text, _PRIVACY)
