@@ -329,6 +329,9 @@ class LLMScreener:
 
 RATE_LIMIT_MARKERS = ("429", "resource_exhausted", "quota", "rate limit", "too many requests")
 OVERLOAD_MARKERS = ("503", "unavailable", "overloaded", "high demand")
+# Gemini free tier reports the exhausted window in the quota id, e.g.
+# "GenerateRequestsPerDayPerProjectPerModel-FreeTier".
+DAILY_QUOTA_MARKERS = ("perday", "per day", "requests_per_day", "daily limit")
 
 
 def _backoff_for(exc: Exception, attempt: int) -> float:
@@ -345,6 +348,10 @@ def _backoff_for(exc: Exception, attempt: int) -> float:
     """
     text = str(exc).lower()
     if any(marker in text for marker in RATE_LIMIT_MARKERS):
+        # A per-day cap cannot clear within a run, so waiting out the retries
+        # just burns minutes per post. Fail fast and let the caller stop.
+        if any(marker in text for marker in DAILY_QUOTA_MARKERS):
+            return 0.0
         hinted = re.search(r"'?retrydelay'?:\s*'?(\d+)s", text)
         if hinted:
             return min(float(hinted.group(1)) + 2, 120.0)

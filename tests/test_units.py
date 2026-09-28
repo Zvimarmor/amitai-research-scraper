@@ -270,3 +270,17 @@ def test_provider_retry_delay_hint_is_honoured():
 def test_backoff_is_capped():
     assert _backoff_for(Exception("429 quota {'retryDelay': '600s'}"), 0) == 120.0
     assert _backoff_for(Exception("429 quota"), 9) == 120.0
+
+
+def test_daily_quota_fails_fast_instead_of_waiting_out_retries():
+    """A per-day cap cannot clear mid-run; waiting 30-90s per attempt wasted
+    minutes per post before this was special-cased."""
+    exc = Exception("429 RESOURCE_EXHAUSTED quota metric "
+                    "GenerateRequestsPerDayPerProjectPerModel-FreeTier")
+    assert _backoff_for(exc, 0) == 0.0
+
+
+def test_per_minute_quota_still_waits():
+    """Only the daily window fails fast - a per-minute cap must still back off."""
+    exc = Exception("429 RESOURCE_EXHAUSTED GenerateRequestsPerMinutePerProject-FreeTier")
+    assert _backoff_for(exc, 0) >= 30.0
