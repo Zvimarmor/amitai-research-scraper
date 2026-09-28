@@ -27,8 +27,8 @@ MEDICAL_TERMS = [
     # perfume and a given name, and משאבה is any pump, so bare forms let perfume
     # and breast-pump threads through whenever a parental word co-occurs.
     "דקסקום", "חיישן ליברה", "ליברה 2", "ליברה 3", "סנסור",
-    "מד סוכר רציף", "משאבת סוכר", "אפליקציית סוכר", "אפליקציה",
-    "התראות סוכר", "ניטור רציף",
+    "מד סוכר", "מד סוכר רציף", "משאבת סוכר", "אפליקציית סוכר", "אפליקציה",
+    "התראות סוכר", "ניטור רציף", "בלוטוס",
     # Psychiatric / mental health (Hebrew)
     "פסיכיאטר", "פסיכולוג", "טיפול נפשי", "פסיכותרפיה", "אשפוז", "דיכאון",
     "חרדה", "ריטלין", "קונצרטה", "נוגדי דיכאון", "אבחון", "הפרעת קשב",
@@ -47,13 +47,22 @@ PRIVACY_TERMS = [
     "בלי ידיעת", "בלי שההורים", "לא סיפרתי", "מסתיר", "להסתיר", "יגלו",
     "הסכמה", "חיסיון", "מידע רפואי", "לספר להורים", "אפוטרופוס",
     # Continuous remote monitoring, as distinct from one-off disclosure.
-    "מעקב", "ניטור", "עוקבים", "עוקב אחריי", "בודקים לי", "התראות להורים",
-    "רואים לי", "מפקחים",
+    "מעקב", "ניטור", "עוקבים", "עוקב אחריי", "עוקבים אחרי", "בודקים לי",
+    "התראות להורים", "רואים לי", "מפקחים",
+    # Adolescent friction vernacular. Teenagers do not write "parental
+    # involvement in disease management" - they write that the sensor beeps at
+    # night and someone nags them about it. These are generic alone, which is
+    # why a device/diabetes term still has to co-occur.
+    "חופרים", "חופר לי", "מציקים", "נודניק",
+    "צפצוף", "צפצופים", "מצפצף", "התראה", "התראות", "התראות בלילה",
+    "לכבות", "לנתק", "כיביתי", "ניתקתי",
+    "איך להסתיר", "הסתרת סוכר", "שיתוף נתונים", "קוד לאפליקציה",
     # English
     "parents", "mom", "dad", "confidential", "confidentiality", "privacy",
     "secret", "without my parents", "hide", "hiding", "told my parents",
     "consent", "guardian", "monitoring", "tracking", "watching",
-    "share my data", "parental alerts",
+    "share my data", "parental alerts", "alerts", "alarms", "beeping",
+    "turn off alerts", "mute", "unfollow", "stop sharing",
 ]
 
 ADOLESCENT_TERMS = [

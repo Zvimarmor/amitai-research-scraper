@@ -321,3 +321,24 @@ def test_remote_monitoring_terms_are_privacy_terms(text, term):
     """Continuous CGM monitoring is a different privacy shape from one-off
     disclosure, so the monitoring vocabulary has to register as privacy."""
     assert term in _matches(text, _PRIVACY)
+
+
+@pytest.mark.parametrize("text", [
+    "החיישן מצפצף כל הלילה וההורים רואים לי את הסוכר בטלפון שלהם ואני רק רוצה לכבות את ההתראות",
+    "הדקסקום מחובר לאפליקציה שלהם, הם חופרים לי על כל צפצוף, ניתקתי את שיתוף נתונים",
+    "שמתי סנסור והם מציקים לי כל הזמן, יש קוד לאפליקציה שאני יכול לשנות?",
+])
+def test_friction_vernacular_passes_without_diagnostic_phrasing(text):
+    """Adolescents describe monitoring friction ("it beeps", "they nag me"), not
+    "parental involvement in disease management" - the gate must accept a device
+    term plus friction language with no formal diagnosis wording present."""
+    post = Post(url="https://stips.co.il/ask/f", source=Source.STIPS, title="t", body=text * 2)
+    assert regex_screen(post).passed
+
+
+@pytest.mark.parametrize("term", [
+    "צפצופים", "התראות בלילה", "לכבות", "שיתוף נתונים",
+    "קוד לאפליקציה", "חופרים", "מציקים", "עוקבים אחרי",
+])
+def test_friction_terms_are_registered_privacy_terms(term):
+    assert term in [t for t, _ in _PRIVACY]
