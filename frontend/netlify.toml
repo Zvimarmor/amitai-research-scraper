@@ -3,6 +3,6 @@
 # Equivalent to the single line in _redirects — keep one, not both.
 [[redirects]]
   from = "/api/*"
-  to = "https://less-dependence-parameter-two.trycloudflare.com/api/:splat"
+  to = "Binary file /Users/zvis_server/MyProjects/project_for_amitai/runs/production/tunnel.log matches/api/:splat"
   status = 200
   force = true
