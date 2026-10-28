@@ -128,6 +128,8 @@ class Fetcher:
                 return parse_fxp(html, url, query)
             if source is Source.STIPS:
                 return parse_stips(html, url, query)
+            if source.is_article:
+                return parse_article(html, url, query, source)
             return parse_generic(html, url, query, source)
         except Exception as exc:
             log.warning("Parse failed for %s: %s", url, exc)
@@ -319,6 +321,162 @@ def _generic_body(soup: BeautifulSoup) -> str:
         tag.decompose()
     main = soup.select_one("main") or soup.select_one("article") or soup.body or soup
     return clean_text(main.get_text("\n", strip=True))
+
+
+# --------------------------------------------------------------------------
+# Articles: health portals, news sites, academic pages
+# --------------------------------------------------------------------------
+
+# schema.org types that carry an article's own metadata. WebPage and
+# BreadcrumbList are deliberately absent: every page has them and they say
+# nothing about the piece itself.
+ARTICLE_LD_TYPES = {
+    "Article", "NewsArticle", "ReportageNewsArticle", "OpinionNewsArticle",
+    "BlogPosting", "ScholarlyArticle", "MedicalScholarlyArticle", "Report",
+}
+
+ARTICLE_TITLE_SELECTORS = [
+    "meta[property='og:title']", "meta[name='citation_title']", "h1", "title",
+]
+ARTICLE_DATE_SELECTORS = [
+    "meta[property='article:published_time']", "meta[name='citation_publication_date']",
+    "meta[name='citation_date']", "meta[name='dc.date']", "meta[name='date']",
+    "meta[itemprop='datePublished']",
+]
+ARTICLE_BODY_SELECTORS = [
+    "article", "[itemprop='articleBody']", "div.article-body", "div.entry-content",
+    "main", "div#content",
+]
+# Talkbacks. Ynet and Mako load theirs client-side, so on those sites these
+# usually match nothing; server-rendered comment sections (WordPress-style
+# portals, university blogs) are what they catch.
+ARTICLE_COMMENT_SELECTORS = [
+    "div[class*='talkback'] div[class*='text']", "div[class*='Talkback'] p",
+    "li.comment div.comment-content", "div.comment-body", "div.comment-text",
+]
+_MIN_PARAGRAPH = 40
+
+
+def _jsonld_article(soup: BeautifulSoup) -> dict:
+    """First JSON-LD object whose @type is an article type, else {}."""
+    for node in soup.select('script[type="application/ld+json"]'):
+        try:
+            data = json.loads(node.string or node.get_text() or "")
+        except json.JSONDecodeError:
+            continue
+        if isinstance(data, dict):
+            items = data.get("@graph") or [data]
+        elif isinstance(data, list):
+            items = data
+        else:
+            continue
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            types = item.get("@type")
+            types = types if isinstance(types, list) else [types]
+            if ARTICLE_LD_TYPES & {t for t in types if isinstance(t, str)}:
+                return item
+    return {}
+
+
+def _names(value) -> list[str]:
+    """Author names from a JSON-LD author field (str, Person, or a list)."""
+    people = value if isinstance(value, list) else [value]
+    out = []
+    for person in people:
+        name = person.get("name") if isinstance(person, dict) else person
+        if isinstance(name, str) and name.strip():
+            out.append(clean_text(name))
+    return out
+
+
+def _article_author(soup: BeautifulSoup, ld: dict) -> Optional[str]:
+    names = _names(ld.get("author"))
+    if not names:
+        names = [clean_text(m.get("content", "")) for m in soup.select("meta[name='citation_author']")]
+    if not names:
+        for sel in ("meta[name='author']", "meta[property='article:author']"):
+            node = soup.select_one(sel)
+            content = clean_text(node.get("content", "")) if node else ""
+            # article:author is often a profile URL rather than a name.
+            if content and not content.startswith("http"):
+                names = [content]
+                break
+    names = [n for n in dict.fromkeys(names) if n]
+    return ", ".join(names) or None
+
+
+def _article_date(soup: BeautifulSoup, ld: dict) -> Optional[str]:
+    if isinstance(ld.get("datePublished"), str) and ld["datePublished"].strip():
+        return ld["datePublished"].strip()
+    for sel in ARTICLE_DATE_SELECTORS:
+        node = soup.select_one(sel)
+        if node and node.get("content", "").strip():
+            return node["content"].strip()
+    node = soup.select_one("time[datetime]")
+    return node["datetime"].strip() if node else None
+
+
+def _article_paragraphs(soup: BeautifulSoup) -> str:
+    """Paragraph text from the first container that holds a real article.
+
+    Paragraphs rather than the container's full text, so share buttons, ad
+    slots and "read more" link lists between them are left behind.
+    """
+    for sel in ARTICLE_BODY_SELECTORS:
+        container = soup.select_one(sel)
+        if not container:
+            continue
+        paragraphs = [clean_text(p.get_text(" ", strip=True)) for p in container.select("p")]
+        paragraphs = list(dict.fromkeys(p for p in paragraphs if len(p) >= _MIN_PARAGRAPH))
+        if len(paragraphs) >= 2:
+            return "\n\n".join(paragraphs)
+    return ""
+
+
+def parse_article(html: str, url: str, query: str = "", source: Source = Source.OTHER) -> Post:
+    """An edited article: title, body, author, publication date, talkbacks.
+
+    JSON-LD is tried first because news sites keep it accurate for search
+    engines; meta tags (including the citation_* set academic repositories
+    use) and the page's own paragraphs are the fallbacks.
+    """
+    soup = _soup(html)
+    ld = _jsonld_article(soup)
+
+    title = _meta_or_text(soup, ARTICLE_TITLE_SELECTORS)
+    if not title and isinstance(ld.get("headline"), str):
+        title = clean_text(ld["headline"])
+
+    author = _article_author(soup, ld)
+    posted_at = _article_date(soup, ld)
+    comments = _select_texts(soup, ARTICLE_COMMENT_SELECTORS)
+
+    for tag in soup(["script", "style", "nav", "header", "footer", "noscript", "form", "aside"]):
+        tag.decompose()
+
+    body = ""
+    if isinstance(ld.get("articleBody"), str) and len(ld["articleBody"]) > 200:
+        body = clean_text(ld["articleBody"])
+    if not body:
+        body = _article_paragraphs(soup)
+    if not body:
+        body = _generic_body(soup)
+
+    # The standfirst / abstract often holds the piece's thesis and is not
+    # always repeated in the body paragraphs.
+    lead = ld.get("description") if isinstance(ld.get("description"), str) else ""
+    if not lead:
+        lead = _meta_or_text(soup, ["meta[name='citation_abstract']", "meta[name='description']"])
+    lead = clean_text(lead)
+    if lead and lead not in body:
+        body = f"{lead}\n\n{body}" if body else lead
+
+    return Post(
+        url=url, source=source, title=title, body=body, comments=comments,
+        author=author, posted_at=posted_at, query=query,
+    )
 
 
 def parse_generic(html: str, url: str, query: str = "", source: Source = Source.OTHER) -> Post:

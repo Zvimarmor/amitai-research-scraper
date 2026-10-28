@@ -87,7 +87,7 @@ TUNNEL_PID=$!
 
 TUNNEL_URL=""
 for _ in $(seq 1 60); do
-  TUNNEL_URL="$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "$TUNNEL_LOG" | head -1 || true)"
+  TUNNEL_URL="$(grep -aoE 'https://[a-z0-9-]+\.trycloudflare\.com' "$TUNNEL_LOG" | head -1 || true)"
   [[ -n "$TUNNEL_URL" ]] && break
   kill -0 "$TUNNEL_PID" 2>/dev/null || { tail -20 "$TUNNEL_LOG"; die "cloudflared exited"; }
   sleep 1

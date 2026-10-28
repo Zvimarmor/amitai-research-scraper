@@ -217,6 +217,60 @@ def cmd_rescreen(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ingest(args: argparse.Namespace) -> int:
+    """Add specific URLs - an essay or study a researcher found by hand.
+
+    These bypass search, and the regex gate only labels them rather than
+    deciding whether they are stored: a hand-picked source is kept even when
+    its wording misses the forum-tuned lexicon. The LLM still screens them so
+    the row carries a summary and quotes like every other.
+    """
+    db = Database()
+    screener: Optional[LLMScreener] = None
+    if not args.no_llm:
+        screener = LLMScreener(provider=args.provider)
+
+    out = []
+    with Fetcher() as fetcher:
+        for i, url in enumerate(args.urls):
+            if i:
+                polite_sleep()
+            post = fetcher.fetch_post(url, query=args.query)
+            if post is None or len(post.full_text) < 80:
+                log.error("No usable content at %s", url)
+                out.append({"url": url, "stored": False})
+                continue
+            regex = regex_screen(post)
+            analysis = None
+            if screener is not None:
+                try:
+                    analysis = screener.analyze(post)
+                except Exception as exc:
+                    log.warning("Screening failed for %s: %s", url, exc)
+            db.upsert_post(post, regex=regex, analysis=analysis)
+            if args.category:
+                db.set_category(url, args.category)
+            out.append({
+                "url": url, "stored": True, "source": post.source.value,
+                "title": post.title, "author": post.author, "published_at": post.posted_at,
+                "chars": len(post.full_text), "comments": len(post.comments),
+                "research_category": args.category,
+                "is_relevant": analysis.is_relevant if analysis else None,
+            })
+
+    print(json.dumps(out, ensure_ascii=False, indent=2))
+    return 0 if all(r["stored"] for r in out) else 1
+
+
+def cmd_tag(args: argparse.Namespace) -> int:
+    """Set or clear the manual research category on stored posts."""
+    db = Database()
+    missing = [u for u in args.urls if not db.set_category(u, args.category or None)]
+    for url in missing:
+        log.error("Not in the database: %s", url)
+    return 1 if missing else 0
+
+
 def cmd_queries(args: argparse.Namespace) -> int:
     queries = build_queries(core_themes=args.themes, sites=args.sites)
     for q in queries:
@@ -266,6 +320,20 @@ def build_parser() -> argparse.ArgumentParser:
                      help="comma-delimited ddgs engines, e.g. 'brave, google' (default: auto)")
     run.add_argument("--provider", choices=["gemini", "openai"], default=None)
     run.set_defaults(func=cmd_run)
+
+    ingest = sub.add_parser("ingest", help="fetch, screen and store specific URLs")
+    ingest.add_argument("urls", nargs="+")
+    ingest.add_argument("--category", default=None,
+                        help="manual research_category to tag the rows with")
+    ingest.add_argument("--query", default="manual", help="provenance label stored as the query")
+    ingest.add_argument("--no-llm", action="store_true")
+    ingest.add_argument("--provider", choices=["gemini", "openai"], default=None)
+    ingest.set_defaults(func=cmd_ingest)
+
+    tag = sub.add_parser("tag", help="set (or with an empty --category, clear) a manual category")
+    tag.add_argument("urls", nargs="+")
+    tag.add_argument("--category", required=True)
+    tag.set_defaults(func=cmd_tag)
 
     q = sub.add_parser("queries", help="print generated dorks without running them")
     q.add_argument("--themes", nargs="+", default=["t1d", "psychiatric"], choices=sorted(THEMES))

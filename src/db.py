@@ -36,6 +36,17 @@ CREATE INDEX IF NOT EXISTS idx_posts_hash   ON posts (content_hash);
 CREATE INDEX IF NOT EXISTS idx_posts_source ON posts (source);
 """
 
+# Columns added after the first release. CREATE TABLE IF NOT EXISTS leaves an
+# existing table alone, so these are added on open when missing.
+#   author / published_at - what an article states about itself (forums: NULL)
+#   research_category     - a researcher's manual tag; overrides the rule-based
+#                           bucket in the Amitai export
+MIGRATIONS = {
+    "author": "TEXT",
+    "published_at": "TEXT",
+    "research_category": "TEXT",
+}
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
@@ -66,6 +77,10 @@ class Database:
     def _init_schema(self) -> None:
         with self.connect() as conn:
             conn.executescript(SCHEMA)
+            present = {row["name"] for row in conn.execute("PRAGMA table_info(posts)")}
+            for column, kind in MIGRATIONS.items():
+                if column not in present:
+                    conn.execute(f"ALTER TABLE posts ADD COLUMN {column} {kind}")
 
     # -- dedup helpers -------------------------------------------------
 
@@ -103,14 +118,17 @@ class Database:
             conn.execute(
                 """
                 INSERT INTO posts (url, content_hash, source, title, raw_text, query,
-                                   regex_json, analysis_json, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                   regex_json, analysis_json, author, published_at,
+                                   created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(url) DO UPDATE SET
                     content_hash  = excluded.content_hash,
                     title         = excluded.title,
                     raw_text      = excluded.raw_text,
                     regex_json    = COALESCE(excluded.regex_json, posts.regex_json),
                     analysis_json = COALESCE(excluded.analysis_json, posts.analysis_json),
+                    author        = COALESCE(excluded.author, posts.author),
+                    published_at  = COALESCE(excluded.published_at, posts.published_at),
                     updated_at    = excluded.updated_at
                 """,
                 (
@@ -122,12 +140,26 @@ class Database:
                     post.query,
                     regex_json,
                     analysis_json,
+                    post.author,
+                    post.posted_at,
                     now,
                     now,
                 ),
             )
             row = conn.execute("SELECT id FROM posts WHERE url = ?", (post.url,)).fetchone()
         return int(row["id"])
+
+    def set_category(self, url: str, category: Optional[str]) -> bool:
+        """Tag a stored post with a manual research category (None clears it).
+
+        Returns False when no post has that URL.
+        """
+        with self.connect() as conn:
+            cur = conn.execute(
+                "UPDATE posts SET research_category = ?, updated_at = ? WHERE url = ?",
+                (category, _now(), url),
+            )
+        return cur.rowcount > 0
 
     # -- reads ---------------------------------------------------------
 

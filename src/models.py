@@ -5,6 +5,7 @@ import hashlib
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
+from urllib.parse import urlparse
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -13,6 +14,11 @@ class Source(str, Enum):
     FXP = "fxp"
     STIPS = "stips"
     REDDIT = "reddit"
+    # Edited articles rather than threads: one author, a date, maybe talkbacks.
+    SCHNEIDER = "schneider"
+    YNET = "ynet"
+    MAKO = "mako"
+    ACADEMIC = "academic"
     OTHER = "other"
 
     @classmethod
@@ -24,7 +30,23 @@ class Source(str, Enum):
             return cls.STIPS
         if "reddit.com" in low:
             return cls.REDDIT
+        host = urlparse(low).hostname or ""
+        if host == "schneider.org.il" or host.endswith(".schneider.org.il"):
+            return cls.SCHNEIDER
+        if host == "ynet.co.il" or host.endswith(".ynet.co.il"):
+            return cls.YNET
+        if host == "mako.co.il" or host.endswith(".mako.co.il"):
+            return cls.MAKO
+        if host == "ac.il" or host.endswith(".ac.il"):
+            return cls.ACADEMIC
         return cls.OTHER
+
+    @property
+    def is_article(self) -> bool:
+        return self in ARTICLE_SOURCES
+
+
+ARTICLE_SOURCES = frozenset({Source.SCHNEIDER, Source.YNET, Source.MAKO, Source.ACADEMIC})
 
 
 class SearchHit(BaseModel):

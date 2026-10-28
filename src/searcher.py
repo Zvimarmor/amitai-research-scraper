@@ -113,6 +113,12 @@ SITE_LANGUAGE = {
     "fxp.co.il": "he",
     "stips.co.il": "he",
     "reddit.com": "en",
+    # Opt-in article sources (not in DEFAULT_SITES): `site:ac.il` covers every
+    # Israeli university and college domain.
+    "schneider.org.il": "he",
+    "ynet.co.il": "he",
+    "mako.co.il": "he",
+    "ac.il": "he",
 }
 
 DEFAULT_SITES = ("fxp.co.il", "stips.co.il", "reddit.com")
