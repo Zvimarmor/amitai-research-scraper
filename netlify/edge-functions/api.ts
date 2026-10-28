@@ -9,7 +9,7 @@
 // on every launch, so a new quick-tunnel hostname ships with the next push
 // without anyone touching the dashboard.
 
-import { API_ORIGIN as FALLBACK_ORIGIN } from "./origin.ts";
+import { API_ORIGIN as FALLBACK_ORIGIN } from "../origin.ts";
 
 export default async (request: Request): Promise<Response> => {
   const origin = (Deno.env.get("API_ORIGIN") || FALLBACK_ORIGIN || "").replace(/\/+$/, "");
